@@ -13,7 +13,7 @@ import itertools
 def read_file(f_addr):
     df = pandas.read_excel(f_addr)
     columns = df.columns
-    return columns
+    return df, columns
 
 
 def convert_nominal_to_int(columns):
@@ -49,11 +49,6 @@ def get_all_initial_seubsets(columns_label_list, subset_len):
     return set(itertools.combinations(columns_label_list, subset_len))    
 
 
-
-def get_cell_inx(feature_inx, granularity_num):
-    return range((granularity_num * feature_inx) + granularity_num + 1)
-
-
 #Not very efficient in terms of space
 def initialize_cells(subset_len, granularity_num):
     cells = [[] for i in range(pow(granularity_num, subset_len)]
@@ -61,7 +56,7 @@ def initialize_cells(subset_len, granularity_num):
 
 
 #The tree depth is equal with the length of features_subset
-def partition(columns, features_subset, granularity_num):
+def partition(df, features_subset, granularity_num):
     cells = initialize_cells(len(features_subset), granularity_num)
 #    depth = 0
     cell_inx = 0
@@ -84,10 +79,53 @@ def calculate_avg(column):
 
 
 
-def compute_iscores(columns_data, Y, y_avg, Y_cell_avg, n, n_j, m1):
-    iscore_dict = {}
-    for c in columns_data:
-        
-        col_data = columns_data[c]
-        iscore = get_iscore(col_data, y_avg, Y_cell_avg, n, n_j, m1)
+def compute_iscore(df, feature_sample, granularity_num, target_feature_name):
+    cells = (df, feature_sample, granularity_num)
+    target_values = df.columns[target_feature_name].values
+    cells_avg = []    
 
+    for c in cells:
+        temp = 0
+        temp_counter = 0
+        avg = 0
+        for elem in cells:
+            temp += elem[target_feature_name]
+            temp_counter += 1
+        if temp_counter != 0:
+            avg = float(temp)/temp_counter
+        cells_avg.append(avg)
+    
+    return compute_iscore(target_values, cells_avg)
+
+
+
+#Backward Dropping Algorithm
+def BDA(df, initial_features_sample, granularity_num, target_feature_name)
+    global_max_iscore = -float('Inf')
+    global_max_subset = []
+    sample_start = initial_features_sample
+
+    while len(sample_star > 1) 
+        local_max_iscore = -float('Inf')
+        local_max_subset = []
+        for i in range(sample_star):
+            feature_sample = sample_star[:i] + sample_star[i+1:] 
+            #Compute I-Score
+            iscore = compute_iscore(df, feature_sample, granularity_num, target_feature_name)
+    
+            if iscore > local_max_iscore:
+                local_max_iscore = iscore
+                local_max_subset = feature_sample
+
+        #Drop a variable
+        sample_star = local_max_subset
+
+        #Keep the best I-Score
+        if local_max_iscore > global_max_iscore:
+            global_max_iscore = local_max_iscore
+            global_max_subset = global_max_subset
+        
+    
+     
+
+    
