@@ -13,14 +13,14 @@ def compute_iscore(Y, Y_cells_avg):
         
 
     num = 0
-    for j in range(len(Y_cell_avg)):
-        num += pow(len(Y_cell_avg[j]), 2) * pow((Y_cells_avg[j] - y_avg), 2)
+    for j in range(len(Y_cells_avg)):
+        num += pow(Y_cells_avg[j], 2) * pow((Y_cells_avg[j] - y_avg), 2)
     
     denom = 0
     for i in range(total_num):
         denom += pow((Y[i] - y_avg), 2)
 
-    if n == 0:
+    if total_num == 0:
         print("Error: Denominator is zero!")
         return
 
