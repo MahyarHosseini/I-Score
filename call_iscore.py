@@ -4,6 +4,7 @@ import math
 import itertools
 import numpy
 import string
+import equal_bin_discretization as discrete
 
 #The values of each column should be between 0 and 1
 #def scale_up(in_list, up_value):
@@ -35,7 +36,7 @@ def convert_nominal_to_int(df):
 
 ##########################Test if df has changed at the end (i.e., columns is not a view only)
 #Gives us the ganularity of 11
-def convert_normalized_to_discrete(df):
+def convert_normalized_to_discrete_equal_section(df):
     columns = df.columns
     for c in columns:
         temp_list = []
@@ -49,14 +50,33 @@ def convert_normalized_to_discrete(df):
     return df
 
 
+def convert_normalized_to_discrete_equal_bin(df, bins_num):
+    columns = df.columns
+    for c in columns:
+        temp_columns = []
+        #temp_dict = {}
+        if type(df[c].values[0]) == type(numpy.float64(1.4)):#1.4 is just a random number
+            for val in df[c].values:
+                temp_columns.append(int(round(val * 10)))
+                #if val not in temp_dict:
+                    #temp_dict[val] = int(round(val * 10))
+                #temp_list.append(temp_dict[val])
+            discrete_col, cutoff = discrete.discretize(temp_columns, bins_num) 
+            df[c] = pandas.DataFrame({c:discrete_col})
+    return df
+
+
 def get_all_initial_subsets(columns_label_list, subset_len):
     return set(itertools.combinations(columns_label_list, subset_len))    
+
 
 
 #Not very efficient in terms of space
 def initialize_cells(subset_len, granularity_num):
     cells = [[] for i in range(pow(granularity_num, subset_len))]
     return cells
+
+
 
 def correct_name(name):
     #No name starts with number or special character, or has : in the name
@@ -69,6 +89,7 @@ def correct_name(name):
     if (name[0] in invalidChars) or name[0].isdigit():
         name = 'dummy' + name
     return name
+
 
 
 def partition(df, features_subset, granularity_num):
@@ -84,15 +105,6 @@ def partition(df, features_subset, granularity_num):
         cells[cell_inx].append(row)
 #    print [len(cells[i]) for i in range(len(cells))]
     return cells
-
-
-
-#def calculate_avg(column):
-#    assert len(column) > 0
-#    col_sum = 0
-#    for val in column:
-#        col_sum += val
-#    return col_sum / len(column)
 
 
 
@@ -151,17 +163,14 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_sep29.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 20 
-    granularity_num = 11#It is fixed according to convert_normalized_to_discrete function
+    initial_subset_len = 3 
+    bins_num = 11#It is fixed according to convert_normalized_to_discrete function
     max_iscore = -float('Inf')
     max_subset = []
 
     df = read_file(f_addr)   
-    #print 'df1: ', df, '\n'
     df = convert_nominal_to_int(df)
-    #print 'df2: ', df, '\n'
-    df = convert_normalized_to_discrete(df)
-    #print 'df3: ', df, '\n\n'
+    df = convert_normalized_to_discrete_equal_bin(df, bins_num)
 
     #Standard columns' name: starts with no number of special characters
     temp = {}
@@ -176,14 +185,18 @@ if __name__ == '__main__':
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
     all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
 
-
+    count = 0
     for s in all_subsets:
         #Get the feature set with the highest I-Score according to the initial set 
-        iscore, selected_set = BDA(df, s, granularity_num, target_feature_name)
+        iscore, selected_set = BDA(df, s, bins_num, target_feature_name)
+        count += 1
+        print  '(', str(count), ') I-Score: ', iscore
+        print 'Selected Subset: ', selected_set, '\n'
+        
         if iscore > max_iscore:
             max_iscore = iscore
             max_subset = selected_set 
-
+    print 'Initialsubset length: ', initial_subset_len
     print 'Best I-Score: ', max_iscore
     print 'Best feature set: ', max_subset
 
