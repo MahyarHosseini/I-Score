@@ -49,7 +49,7 @@ def convert_normalized_to_discrete(df):
     return df
 
 
-def get_all_initial_seubsets(columns_label_list, subset_len):
+def get_all_initial_subsets(columns_label_list, subset_len):
     return set(itertools.combinations(columns_label_list, subset_len))    
 
 
@@ -151,7 +151,7 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_sep29.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 3
+    initial_subset_len = 20 
     granularity_num = 11#It is fixed according to convert_normalized_to_discrete function
     max_iscore = -float('Inf')
     max_subset = []
@@ -174,10 +174,10 @@ if __name__ == '__main__':
     df2 = df.copy(deep=True)
 ######Check is the drop function creats a copy of df2 or use aliasing???
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
-    all_seubsets = get_all_initial_seubsets(df2.columns, initial_subset_len)
+    all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
 
 
-    for s in all_seubsets:
+    for s in all_subsets:
         #Get the feature set with the highest I-Score according to the initial set 
         iscore, selected_set = BDA(df, s, granularity_num, target_feature_name)
         if iscore > max_iscore:
