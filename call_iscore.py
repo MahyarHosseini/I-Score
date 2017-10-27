@@ -98,18 +98,20 @@ def correct_name(name):
 
 
 def partition(df, features_subset, granularity_num):
-    cells = initialize_cells(len(features_subset), granularity_num)
-#    print 'len(features_subset): ',len(features_subset) 
+    #cells = initialize_cells(len(features_subset), granularity_num)
+    cells = {}
     cell_inx = 0
     for row_num, row in enumerate(df.itertuples(), 1):
         height = len(features_subset) - 1
         cell_inx = 0
         for f in features_subset:
-            #print 'features_subset:', features_subset, '\nrow: ', row, '\nfeature: ', f
             cell_inx += getattr(row, f) * pow(granularity_num, height)
             height -= 1
-        cells[cell_inx].append(row)
-#    print [len(cells[i]) for i in range(len(cells))]
+        #cells[cell_inx].append(row)
+        if cell_inx not in cells:
+            cells[cell_inx] = [row]
+        else:
+            cells[cell_inx].append
     return cells
 
 
@@ -119,11 +121,12 @@ def get_iscore(df, feature_sample, granularity_num, target_feature_name):
     target_values = df[target_feature_name].values
     cells_avg = []    
 
-    for c in cells:
+    for key in cells:
+        cl = cells[key]
         temp = 0
         temp_counter = 0
         avg = 0
-        for elem in c:
+        for elem in cl:
             temp += getattr(elem, target_feature_name)
             temp_counter += 1
         if temp_counter != 0:
@@ -237,14 +240,17 @@ if __name__ == '__main__':
     df2 = df.copy(deep=True)
 ######Check is the drop function creats a copy of df2 or use aliasing???
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
-    all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
-    #all_subsets = [df2.columns]
+#    all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
+    all_subsets = [df2.columns]
    
     #print all_subsets
      
     count = 0
     total_num = len(all_subsets)
-    for s in all_subsets:
+    while len(all_subsets) > 0:
+        s = all_subsets.pop()
+    #for s in all_subsets:
+        
         #Get the feature set with the highest I-Score according to the initial set 
         iscore, selected_set = BDA(df, s, bins_num, target_feature_name)
         count += 1
