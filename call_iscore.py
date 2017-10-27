@@ -73,7 +73,12 @@ def get_all_initial_subsets(columns_label_list, subset_len):
 
 #Not very efficient in terms of space
 def initialize_cells(subset_len, granularity_num):
-    cells = [[] for i in range(pow(granularity_num, subset_len))]
+    #cells = [[] for i in xrange(pow(granularity_num, subset_len))]
+    cells = []
+    count = pow(granularity_num, subset_len)
+    while count > 0:
+        cells.append([])
+        count -= 1
     return cells
 
 
@@ -100,6 +105,7 @@ def partition(df, features_subset, granularity_num):
         height = len(features_subset) - 1
         cell_inx = 0
         for f in features_subset:
+            #print 'features_subset:', features_subset, '\nrow: ', row, '\nfeature: ', f
             cell_inx += getattr(row, f) * pow(granularity_num, height)
             height -= 1
         cells[cell_inx].append(row)
@@ -127,11 +133,12 @@ def get_iscore(df, feature_sample, granularity_num, target_feature_name):
     return isc.compute_iscore(target_values, cells_avg)
 
 
-
 #Backward Dropping Algorithm
 def BDA(df, initial_features_sample, granularity_num, target_feature_name):
-    global_max_iscore = -float('Inf')
-    global_max_subset = []
+    #global_max_iscore = -float('Inf')
+    #global_max_subset = []
+    global_max_iscore = get_iscore(df, initial_features_sample, granularity_num, target_feature_name)
+    global_max_subset = initial_features_sample
     sample_star = initial_features_sample
 
 
@@ -150,20 +157,68 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
         #Drop a variable
         sample_star = local_max_subset
        
-#        print 'local ',local_max_iscore, 'global ', global_max_iscore,  (local_max_iscore > global_max_iscore)
         #Keep the best I-Score
         if local_max_iscore > global_max_iscore:
             global_max_iscore = local_max_iscore
             global_max_subset = local_max_subset
 #        print 'global_max_subset', global_max_subset
     return global_max_iscore, global_max_subset
-    
+
+
+#Backward Dropping Algorithm
+#def BDA(df, initial_features_sample, granularity_num, target_feature_name):
+#    #global_max_iscore = -float('Inf')
+#    #global_max_subset = []
+#    global_max_iscore = get_iscore(df, initial_features_sample, granularity_num, target_feature_name)
+#    global_max_subset = [initial_features_sample]
+#    sample_star = initial_features_sample
+#    
+#    print 'before: ', initial_features_sample
+#
+#    while len(sample_star) > 1: 
+#        local_max_iscore = -float('Inf')
+#        local_max_subset = []
+#        print 'local_max_subset1: ', local_max_subset
+#        for i in range(len(sample_star)):
+#            feature_sample = sample_star[:i] + sample_star[i+1:] 
+#            #Compute I-Score
+#            iscore = get_iscore(df, feature_sample, granularity_num, target_feature_name)
+#             
+#            if iscore > local_max_iscore:
+#                local_max_iscore = iscore
+#                local_max_subset = [feature_sample]
+#                print 'local_max_subset4: ', local_max_subset, '[feature_sample]: ', [feature_sample]
+#            if iscore == local_max_iscore:
+#                local_max_subset = local_max_subset.append(feature_sample)
+#                print 'local_max_subset5: ', local_max_subset
+#            print 'local_max_subset2: ', local_max_subset
+#
+#        print 'local_max_subset3: ', local_max_subset
+#        #Drop a variable
+#        sample_star = local_max_subset
+#       
+#        #Keep the best I-Score
+#        if local_max_iscore > global_max_iscore:
+#            global_max_iscore = local_max_iscore
+#            global_max_subset = local_max_subset
+#        if local_max_iscore == global_max_iscore:
+#            global_max_subset.append(local_max_subset)
+##        print 'global_max_subset', global_max_subset
+#    return global_max_iscore, global_max_subset
+
+#def add_max(max_list, vector):
+#    if len(max_list) > 0:
+#        if max_list[0] < value:
+#            max_list = [value]
+#        if max_list[0] == value:
+#           max_list.append(value)
+#    return max_list
      
 
 if __name__ == '__main__':
-    f_addr = '/home/seyedmah/Desktop/normalized_data_sep29.xlsx'
+    f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 3 
+    initial_subset_len = 45
     bins_num = 11#It is fixed according to convert_normalized_to_discrete function
     max_iscore = -float('Inf')
     max_subset = []
@@ -177,26 +232,31 @@ if __name__ == '__main__':
     for name in df.columns:
         temp[name] = correct_name(name) 
     df = df.rename(columns = temp)
-    
  
     #Remove target column for creating the feature sets
     df2 = df.copy(deep=True)
 ######Check is the drop function creats a copy of df2 or use aliasing???
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
     all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
-
+    #all_subsets = [df2.columns]
+   
+    #print all_subsets
+     
     count = 0
+    total_num = len(all_subsets)
     for s in all_subsets:
         #Get the feature set with the highest I-Score according to the initial set 
         iscore, selected_set = BDA(df, s, bins_num, target_feature_name)
         count += 1
-        print  '(', str(count), ') I-Score: ', iscore
+        print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
         print 'Selected Subset: ', selected_set, '\n'
         
         if iscore > max_iscore:
             max_iscore = iscore
-            max_subset = selected_set 
-    print 'Initialsubset length: ', initial_subset_len
+            max_subset = [selected_set] 
+        if iscore == max_iscore:
+           max_subset.append(selected_set)
+    print 'Initial subset length: ', initial_subset_len
     print 'Best I-Score: ', max_iscore
     print 'Best feature set: ', max_subset
 
