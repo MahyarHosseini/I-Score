@@ -13,8 +13,8 @@ def compute_iscore(Y, Y_cells_avg):
         
 
     num = 0
-    for j in range(len(Y_cells_avg)):
-        num += pow(Y_cells_avg[j], 2) * pow((Y_cells_avg[j] - y_avg), 2)
+    for inx in Y_cells_avg:
+        num += pow(Y_cells_avg[inx], 2) * pow((Y_cells_avg[inx] - y_avg), 2)
     
     denom = 0
     for i in range(total_num):

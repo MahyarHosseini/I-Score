@@ -72,14 +72,14 @@ def get_all_initial_subsets(columns_label_list, subset_len):
 
 
 #Not very efficient in terms of space
-def initialize_cells(subset_len, granularity_num):
-    #cells = [[] for i in xrange(pow(granularity_num, subset_len))]
-    cells = []
-    count = pow(granularity_num, subset_len)
-    while count > 0:
-        cells.append([])
-        count -= 1
-    return cells
+#def initialize_cells(subset_len, granularity_num):
+#    #cells = [[] for i in xrange(pow(granularity_num, subset_len))]
+#    cells = []
+#    count = pow(granularity_num, subset_len)
+#    while count > 0:
+#        cells.append([])
+#        count -= 1
+#    return cells
 
 
 
@@ -100,12 +100,17 @@ def correct_name(name):
 def partition(df, features_subset, granularity_num):
     #cells = initialize_cells(len(features_subset), granularity_num)
     cells = {}
-    cell_inx = 0
+#    cell_inx = 0.0
     for row_num, row in enumerate(df.itertuples(), 1):
         height = len(features_subset) - 1
-        cell_inx = 0
+        cell_inx = numpy.longdouble(0)
         for f in features_subset:
-            cell_inx += getattr(row, f) * pow(granularity_num, height)
+#            print 'row: ', getattr(row, f)
+#            print 'pow: ', pow(granularity_num, height)
+#            print 'before, cell_inx', cell_inx
+#            print 'f: ', f
+            cell_inx += numpy.longdouble(getattr(row, f)) * numpy.longdouble(pow(granularity_num, height))
+#            print 'after, cell_inx:', cell_inx
             height -= 1
         #cells[cell_inx].append(row)
         if cell_inx not in cells:
@@ -119,19 +124,19 @@ def partition(df, features_subset, granularity_num):
 def get_iscore(df, feature_sample, granularity_num, target_feature_name):
     cells = partition(df, feature_sample, granularity_num)
     target_values = df[target_feature_name].values
-    cells_avg = []    
+    cells_avg = {}
 
     for key in cells:
         cl = cells[key]
         temp = 0
-        temp_counter = 0
+        #temp_counter = 0
         avg = 0
         for elem in cl:
             temp += getattr(elem, target_feature_name)
-            temp_counter += 1
-        if temp_counter != 0:
-            avg = float(temp)/temp_counter
-        cells_avg.append(avg)
+            #temp_counter += 1
+        if len(cl) != 0:
+            avg = float(temp)/len(cl)
+        cells_avg[key]= avg
     
     return isc.compute_iscore(target_values, cells_avg)
 
@@ -149,7 +154,12 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
         local_max_iscore = -float('Inf')
         local_max_subset = []
         for i in range(len(sample_star)):
-            feature_sample = sample_star[:i] + sample_star[i+1:] 
+#            print type([sample_star])
+#            print 'sample_star: ', sample_star
+#            print 'first: ', sample_star[:i]
+#            print 'second: ', sample_star[i+1:]
+#            print list(sample_star[:i]) + list(sample_star[i+1:])
+            feature_sample = list(sample_star[:i]) + list(sample_star[i+1:]) 
             #Compute I-Score
             iscore = get_iscore(df, feature_sample, granularity_num, target_feature_name)
              
@@ -221,7 +231,7 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 45
+    initial_subset_len = 52 
     bins_num = 11#It is fixed according to convert_normalized_to_discrete function
     max_iscore = -float('Inf')
     max_subset = []
@@ -262,9 +272,12 @@ if __name__ == '__main__':
             max_subset = [selected_set] 
         if iscore == max_iscore:
            max_subset.append(selected_set)
-    print 'Initial subset length: ', initial_subset_len
+    print '\nInitial subset length: ', initial_subset_len
     print 'Best I-Score: ', max_iscore
-    print 'Best feature set: ', max_subset
+    
+    for i in range(len(max_subset)):
+        print '\n', i + 1, ' Best feature set len: ', len(max_subset[i])
+        print 'Best feature set: ', max_subset[i]
 
 
 
