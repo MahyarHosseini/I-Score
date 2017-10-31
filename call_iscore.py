@@ -231,7 +231,7 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 52 
+    initial_subset_len = 4
     bins_num = 11#It is fixed according to convert_normalized_to_discrete function
     max_iscore = -float('Inf')
     max_subset = []
@@ -250,8 +250,8 @@ if __name__ == '__main__':
     df2 = df.copy(deep=True)
 ######Check is the drop function creats a copy of df2 or use aliasing???
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
-#    all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
-    all_subsets = [df2.columns]
+    all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
+#    all_subsets = [df2.columns]
    
     #print all_subsets
      
@@ -264,14 +264,19 @@ if __name__ == '__main__':
         #Get the feature set with the highest I-Score according to the initial set 
         iscore, selected_set = BDA(df, s, bins_num, target_feature_name)
         count += 1
-        print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
-        print 'Selected Subset: ', selected_set, '\n'
+#        print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
+#        print 'Selected Subset: ', selected_set, '\n'
         
-        if iscore > max_iscore:
+        if iscore == max_iscore:
+            max_subset.append(selected_set)
+            print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
+            print 'max_subset: ', max_subset
+        elif iscore > max_iscore:
             max_iscore = iscore
             max_subset = [selected_set] 
-        if iscore == max_iscore:
-           max_subset.append(selected_set)
+            print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
+            print 'max_subset: ', max_subset
+
     print '\nInitial subset length: ', initial_subset_len
     print 'Best I-Score: ', max_iscore
     
