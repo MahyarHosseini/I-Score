@@ -142,15 +142,16 @@ def get_iscore(df, feature_sample, granularity_num, target_feature_name):
 
 
 #Backward Dropping Algorithm
-def BDA(df, initial_features_sample, granularity_num, target_feature_name):
+def BDA(df, initial_features_sample, granularity_num, target_feature_name, error_range):
     #global_max_iscore = -float('Inf')
     #global_max_subset = []
     global_max_iscore = get_iscore(df, initial_features_sample, granularity_num, target_feature_name)
-    global_max_subset = initial_features_sample
+    global_max_subset = [initial_features_sample]
     sample_star = initial_features_sample
-
-
+    
+    print "\n---------------------------------------------- BDA started --------------------------------------------\n"
     while len(sample_star) > 1: 
+        print "\nSTART LOCAL #####################################################"
         local_max_iscore = -float('Inf')
         local_max_subset = []
         for i in range(len(sample_star)):
@@ -159,21 +160,30 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 #            print 'first: ', sample_star[:i]
 #            print 'second: ', sample_star[i+1:]
 #            print list(sample_star[:i]) + list(sample_star[i+1:])
-            feature_sample = list(sample_star[:i]) + list(sample_star[i+1:]) 
+            local_sample = list(sample_star[:i]) + list(sample_star[i+1:]) 
             #Compute I-Score
-            iscore = get_iscore(df, feature_sample, granularity_num, target_feature_name)
+            iscore = get_iscore(df, local_sample, granularity_num, target_feature_name)
              
-            if iscore > local_max_iscore:
+            print '\n', iscore, 'local_sample: len(',len(local_sample), ')', local_sample
+            if abs(iscore - local_max_iscore) <= error_range:
+                local_max_subset.append(local_sample)
+            elif iscore - local_max_iscore > error_range:
                 local_max_iscore = iscore
-                local_max_subset = feature_sample
+                local_max_subset = [local_sample]
+                print '\n------------------------------------\n', local_max_iscore, 'local_max:', local_max_subset, '\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'
 
         #Drop a variable
-        sample_star = local_max_subset
+        sample_star = local_max_subset[-1]
        
         #Keep the best I-Score
-        if local_max_iscore > global_max_iscore:
+        print local_max_iscore, global_max_iscore, abs(local_max_iscore - global_max_iscore)
+        if abs(local_max_iscore - global_max_iscore) <= error_range:
+            global_max_subset += local_max_subset
+        elif local_max_iscore - global_max_iscore > error_range:
             global_max_iscore = local_max_iscore
             global_max_subset = local_max_subset
+            print "\n\n>>>>>>>>>>>>>>>>>>>> Global max updated <<<<<<<<<<<<<<<<<<<<"
+            print '\n', global_max_iscore, 'local_sample: len(', len(global_max_subset), ')', global_max_subset
 #        print 'global_max_subset', global_max_subset
     return global_max_iscore, global_max_subset
 
@@ -231,8 +241,10 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name):
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 4
+    initial_subset_len = 52
     bins_num = 11#It is fixed according to convert_normalized_to_discrete function
+    error_range = 0.0001
+
     max_iscore = -float('Inf')
     max_subset = []
 
@@ -262,18 +274,22 @@ if __name__ == '__main__':
     #for s in all_subsets:
         
         #Get the feature set with the highest I-Score according to the initial set 
-        iscore, selected_set = BDA(df, s, bins_num, target_feature_name)
+        iscore, selected_sets = BDA(df, s, bins_num, target_feature_name, error_range)
         count += 1
 #        print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
 #        print 'Selected Subset: ', selected_set, '\n'
         
-        if iscore == max_iscore:
-            max_subset.append(selected_set)
+#        if iscore == max_iscore:
+        if abs(iscore - max_iscore) <= error_range:
+            max_subset += selected_sets
             print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
             print 'max_subset: ', max_subset
-        elif iscore > max_iscore:
+        elif iscore - max_iscore > error_range:
+            print '{0:.32f}'.format(iscore)
+            print '{0:.32f}'.format(max_iscore)
+            print '\n', 'iscore: ', str(iscore), '> max_iscore: ', str(max_iscore), iscore > max_iscore
             max_iscore = iscore
-            max_subset = [selected_set] 
+            max_subset = selected_sets
             print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
             print 'max_subset: ', max_subset
 
