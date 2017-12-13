@@ -85,13 +85,13 @@ def get_all_initial_subsets(columns_label_list, subset_len):
 
 def correct_name(name):
     #No name starts with number or special character, or has : in the name
-    invalidChars = set(string.punctuation)
-#    invalidChars = set(string.punctuation.replace("_", ""))
-#    if any(char in invalidChars for char in word):
+    invalid_chars = set(string.punctuation)
+#    invalid_chars = set(string.punctuation.replace("_", ""))
+#    if any(char in invalid_chars for char in word):
     for char in name:
-        if char in invalidChars:
+        if char in invalid_chars:
             name = name.replace(char, "_")
-    if (name[0] in invalidChars) or name[0].isdigit():
+    if (name[0] in invalid_chars) or name[0].isdigit():
         name = 'dummy' + name
     return name
 
@@ -238,67 +238,69 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name, error
 #    return max_list
      
 
-if __name__ == '__main__':
-    f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
-    target_feature_name = 'skip_percentage'
-    initial_subset_len = 52
-    bins_num = 11#It is fixed according to convert_normalized_to_discrete function
-    error_range = 0.0001
-
+def feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num, error_range, debug=False):
     max_iscore = -float('Inf')
-    max_subset = []
-
-    df = read_file(f_addr)   
+    max_subsets = []
+    df = read_file(f_addr)
     df = convert_nominal_to_int(df)
     df = convert_normalized_to_discrete_equal_bin(df, bins_num)
 
     #Standard columns' name: starts with no number of special characters
     temp = {}
     for name in df.columns:
-        temp[name] = correct_name(name) 
+        temp[name] = correct_name(name)
     df = df.rename(columns = temp)
- 
+
     #Remove target column for creating the feature sets
     df2 = df.copy(deep=True)
 ######Check is the drop function creats a copy of df2 or use aliasing???
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
     all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
 #    all_subsets = [df2.columns]
-   
-    #print all_subsets
-     
+
     count = 0
     total_num = len(all_subsets)
     while len(all_subsets) > 0:
         s = all_subsets.pop()
     #for s in all_subsets:
-        
+
         #Get the feature set with the highest I-Score according to the initial set 
         iscore, selected_sets = BDA(df, s, bins_num, target_feature_name, error_range)
         count += 1
-#        print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
-#        print 'Selected Subset: ', selected_set, '\n'
-        
-#        if iscore == max_iscore:
         if abs(iscore - max_iscore) <= error_range:
-            max_subset += selected_sets
-            print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
-            print 'max_subset: ', max_subset
+            max_subsets += selected_sets
+            if debug:
+                print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
+                print 'max_subsets: ', max_subsets
         elif iscore - max_iscore > error_range:
-            print '{0:.32f}'.format(iscore)
-            print '{0:.32f}'.format(max_iscore)
-            print '\n', 'iscore: ', str(iscore), '> max_iscore: ', str(max_iscore), iscore > max_iscore
+            if debug:
+                print '{0:.32f}'.format(iscore)
+                print '{0:.32f}'.format(max_iscore)
+                print '\n', 'iscore: ', str(iscore), '> max_iscore: ', str(max_iscore), iscore > max_iscore
             max_iscore = iscore
-            max_subset = selected_sets
-            print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
-            print 'max_subset: ', max_subset
-
-    print '\nInitial subset length: ', initial_subset_len
-    print 'Best I-Score: ', max_iscore
+            max_subsets = selected_sets
+            if debug:
+                print  '(', str(count), ' out of ', total_num, ') I-Score: ', iscore
+                print 'max_subsets: ', max_subsets
+    if debug:
+        print '\nInitial subset length: ', initial_subset_len
+        print 'Best I-Score: ', max_iscore
+    return max_subsets
     
-    for i in range(len(max_subset)):
-        print '\n', i + 1, ' Best feature set len: ', len(max_subset[i])
-        print 'Best feature set: ', max_subset[i]
+
+
+if __name__ == '__main__':
+    f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
+    target_feature_name = 'skip_percentage'
+    initial_subset_len = 52
+    bins_num = 11#It is fixed according to convert_normalized_to_discrete function
+    error_range = 0.0001
+   
+    max_subsets = feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num, error_range)
+ 
+    for i in range(len(max_subsets)):
+        print '\n', i + 1, ' Best feature set len: ', len(max_subsets[i])
+        print 'Best feature set: ', max_subsets[i]
 
 
 
