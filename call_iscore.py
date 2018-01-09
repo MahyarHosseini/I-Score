@@ -36,7 +36,8 @@ def convert_nominal_to_int(df):
 
 ##########################Test if df has changed at the end (i.e., columns is not a view only)
 #Gives us the ganularity of 11
-def convert_normalized_to_discrete_equal_section(df):
+def convert_normalized_to_discrete_equal_section(data_frame):
+    df = data_frame.copy()
     columns = df.columns
     for c in columns:
         temp_list = []
@@ -51,6 +52,7 @@ def convert_normalized_to_discrete_equal_section(df):
 
 
 def convert_normalized_to_discrete_equal_bin(df, bins_num):
+#    df = data_frame.copy()    
     columns = df.columns
     for c in columns:
         temp_columns = []
@@ -149,28 +151,28 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name, error
     global_max_subset = [initial_features_sample]
     sample_star = initial_features_sample
     
-    print "\n---------------------------------------------- BDA started --------------------------------------------\n"
+#    print "\n---------------------------------------------- BDA started --------------------------------------------\n"
     while len(sample_star) > 1: 
-        print "\nSTART LOCAL #####################################################"
+#        print "\nSTART LOCAL #####################################################"
         local_max_iscore = -float('Inf')
         local_max_subset = []
         for i in range(len(sample_star)):
-#            print type([sample_star])
-#            print 'sample_star: ', sample_star
-#            print 'first: ', sample_star[:i]
-#            print 'second: ', sample_star[i+1:]
-#            print list(sample_star[:i]) + list(sample_star[i+1:])
+##            print type([sample_star])
+##            print 'sample_star: ', sample_star
+##            print 'first: ', sample_star[:i]
+##            print 'second: ', sample_star[i+1:]
+##            print list(sample_star[:i]) + list(sample_star[i+1:])
             local_sample = list(sample_star[:i]) + list(sample_star[i+1:]) 
             #Compute I-Score
             iscore = get_iscore(df, local_sample, granularity_num, target_feature_name)
              
-            print '\n', iscore, 'local_sample: len(',len(local_sample), ')', local_sample
+#            print '\n', iscore, 'local_sample: len(',len(local_sample), ')', local_sample
             if abs(iscore - local_max_iscore) <= error_range:
                 local_max_subset.append(local_sample)
             elif iscore - local_max_iscore > error_range:
                 local_max_iscore = iscore
                 local_max_subset = [local_sample]
-                print '\n------------------------------------\n', local_max_iscore, 'local_max:', local_max_subset, '\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'
+#                print '\n------------------------------------\n', local_max_iscore, 'local_max:', local_max_subset, '\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n'
 
         #Drop a variable
         sample_star = local_max_subset[-1]
@@ -182,9 +184,9 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name, error
         elif local_max_iscore - global_max_iscore > error_range:
             global_max_iscore = local_max_iscore
             global_max_subset = local_max_subset
-            print "\n\n>>>>>>>>>>>>>>>>>>>> Global max updated <<<<<<<<<<<<<<<<<<<<"
-            print '\n', global_max_iscore, 'local_sample: len(', len(global_max_subset), ')', global_max_subset
-#        print 'global_max_subset', global_max_subset
+#            print "\n\n>>>>>>>>>>>>>>>>>>>> Global max updated <<<<<<<<<<<<<<<<<<<<"
+#            print '\n', global_max_iscore, 'local_sample: len(', len(global_max_subset), ')', global_max_subset
+##        print 'global_max_subset', global_max_subset
     return global_max_iscore, global_max_subset
 
 
@@ -238,11 +240,10 @@ def BDA(df, initial_features_sample, granularity_num, target_feature_name, error
 #    return max_list
      
 
-def feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num, error_range, debug=False):
+def feature_selection(data_frame, target_feature_name, initial_subset_len, bins_num, error_range, debug=False):
     max_iscore = -float('Inf')
     max_subsets = []
-    df = read_file(f_addr)
-    df = convert_nominal_to_int(df)
+    df = convert_nominal_to_int(data_frame)
     df = convert_normalized_to_discrete_equal_bin(df, bins_num)
 
     #Standard columns' name: starts with no number of special characters
@@ -257,6 +258,7 @@ def feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num,
     df2 = df2.drop(target_feature_name, 1)#where 1 is the axis number (0 for rows and 1 for columns)
     all_subsets = get_all_initial_subsets(df2.columns, initial_subset_len)
 #    all_subsets = [df2.columns]
+
 
     count = 0
     total_num = len(all_subsets)
@@ -292,11 +294,12 @@ def feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num,
 if __name__ == '__main__':
     f_addr = '/home/seyedmah/Desktop/normalized_data_Oct25.xlsx'
     target_feature_name = 'skip_percentage'
-    initial_subset_len = 52
+    initial_subset_len = 54
     bins_num = 11#It is fixed according to convert_normalized_to_discrete function
     error_range = 0.0001
    
-    max_subsets = feature_selection(f_addr, target_feature_name, initial_subset_len, bins_num, error_range)
+    data_frame = read_file(f_addr)
+    max_subsets = feature_selection(data_frame, target_feature_name, initial_subset_len, bins_num, error_range)
  
     for i in range(len(max_subsets)):
         print '\n', i + 1, ' Best feature set len: ', len(max_subsets[i])
